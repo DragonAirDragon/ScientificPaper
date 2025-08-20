@@ -1,0 +1,34 @@
+#pragma kernel CSMain
+// по 64 треда в группе
+[numthreads(64,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID);
+
+RWStructuredBuffer<float4x4> _Matrices;
+StructuredBuffer<float3>     _BasePositions;
+
+float _Time;
+float _Amp;
+float _Speed;
+uint _InstanceCount;
+
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i >= _InstanceCount) return;
+
+    float3 basePos = _BasePositions[i];
+
+    // волна как в варианте с GameObject: зависит от (x+y+z)
+    float phase = (_Time * _Speed) + (basePos.x + basePos.y + basePos.z) * 0.1;
+    float y = sin(phase) * _Amp;
+
+    float3 pos = basePos + float3(0, y, 0);
+
+    // единичный масштаб и поворот = I, только позиция
+    _Matrices[i] = float4x4(
+        1,0,0,pos.x,
+        0,1,0,pos.y,
+        0,0,1,pos.z,
+        0,0,0,1
+    );
+}
